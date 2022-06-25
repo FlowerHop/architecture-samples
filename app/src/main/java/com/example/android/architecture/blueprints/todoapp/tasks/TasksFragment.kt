@@ -24,6 +24,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -57,9 +58,7 @@ class TasksFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        viewDataBinding = TasksFragBinding.inflate(inflater, container, false).apply {
-            viewmodel = viewModel
-        }
+        viewDataBinding = TasksFragBinding.inflate(inflater, container, false)
         setHasOptionsMenu(true)
         return viewDataBinding.root
     }
@@ -93,6 +92,29 @@ class TasksFragment : Fragment() {
         setupSnackbar()
         setupListAdapter()
         setupRefreshLayout(viewDataBinding.refreshLayout, viewDataBinding.tasksList)
+        viewDataBinding.refreshLayout.setOnRefreshListener { viewModel.refresh() }
+        viewModel.dataLoading.observe(viewLifecycleOwner) {
+            viewDataBinding.refreshLayout.isRefreshing = it
+        }
+
+        viewModel.empty.observe(viewLifecycleOwner) {
+            viewDataBinding.tasksLinearLayout.visibility = if (it) View.GONE else View.VISIBLE
+            viewDataBinding.noTasksLayout.visibility = if (it) View.VISIBLE else View.GONE
+        }
+
+        viewModel.currentFilteringLabel.observe(viewLifecycleOwner) {
+            viewDataBinding.filteringText.text = getText(it)
+        }
+
+        viewModel.noTaskIconRes.observe(viewLifecycleOwner) {
+            viewDataBinding.noTasksIcon.setImageResource(it)
+        }
+
+
+        viewModel.noTasksLabel.observe(viewLifecycleOwner) {
+            viewDataBinding.noTasksText.text = getText(it)
+        }
+
         setupNavigation()
         setupFab()
     }
@@ -162,12 +184,11 @@ class TasksFragment : Fragment() {
     }
 
     private fun setupListAdapter() {
-        val viewModel = viewDataBinding.viewmodel
-        if (viewModel != null) {
-            listAdapter = TasksAdapter(viewModel)
-            viewDataBinding.tasksList.adapter = listAdapter
-        } else {
-            Timber.w("ViewModel not initialized when attempting to set up adapter.")
+        listAdapter = TasksAdapter(viewModel)
+        viewDataBinding.tasksList.adapter = listAdapter
+
+        viewModel.items.observe(viewLifecycleOwner) {
+            listAdapter.submitList(it)
         }
     }
 }
