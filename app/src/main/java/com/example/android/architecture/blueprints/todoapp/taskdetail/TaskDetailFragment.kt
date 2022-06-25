@@ -22,6 +22,8 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
+import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -87,12 +89,31 @@ class TaskDetailFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.taskdetail_frag, container, false)
-        viewDataBinding = TaskdetailFragBinding.bind(view).apply {
-            viewmodel = viewModel
-        }
+        viewDataBinding = TaskdetailFragBinding.bind(view)
         viewDataBinding.lifecycleOwner = this.viewLifecycleOwner
 
         viewModel.start(args.taskId)
+        viewModel.dataLoading.observe(viewLifecycleOwner) {
+            viewDataBinding.refreshLayout.isRefreshing = it
+        }
+        viewDataBinding.refreshLayout.setOnRefreshListener { viewModel.refresh() }
+        viewModel.isDataAvailable.observe(viewLifecycleOwner) {
+            viewDataBinding.noDataLayout.visibility = if (it) View.GONE else View.VISIBLE
+            viewDataBinding.dataLayout.visibility = if (it) View.VISIBLE else View.GONE
+        }
+        viewModel.dataLoading.observe(viewLifecycleOwner) {
+            viewDataBinding.noDataText.visibility = if (it) View.GONE else View.VISIBLE
+        }
+        viewModel.completed.observe(viewLifecycleOwner) {
+            viewDataBinding.taskDetailCompleteCheckbox.isChecked = it
+        }
+
+        viewModel.task.observe(viewLifecycleOwner) {
+            viewDataBinding.taskDetailTitleText.text = it?.title
+            viewDataBinding.taskDetailDescriptionText.text = it?.description
+        }
+
+        viewDataBinding.taskDetailCompleteCheckbox.setOnClickListener { viewModel.setCompleted((it as CompoundButton).isChecked) }
 
         setHasOptionsMenu(true)
         return view
