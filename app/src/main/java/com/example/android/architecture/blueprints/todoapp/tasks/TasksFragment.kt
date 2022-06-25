@@ -88,35 +88,37 @@ class TasksFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Set the lifecycle owner to the lifecycle of the view
-        viewDataBinding.lifecycleOwner = this.viewLifecycleOwner
-        setupSnackbar()
-        setupListAdapter()
-        setupRefreshLayout(viewDataBinding.refreshLayout, viewDataBinding.tasksList)
-        viewDataBinding.refreshLayout.setOnRefreshListener { viewModel.refresh() }
-        viewModel.dataLoading.observe(viewLifecycleOwner) {
-            viewDataBinding.refreshLayout.isRefreshing = it
+        with(viewDataBinding) {
+            lifecycleOwner = viewLifecycleOwner
+            setupSnackbar()
+            setupListAdapter()
+            setupRefreshLayout(refreshLayout, tasksList)
+            refreshLayout.setOnRefreshListener { viewModel.refresh() }
+
+            viewModel.dataLoading.observe(viewLifecycleOwner) {
+                refreshLayout.isRefreshing = it
+            }
+
+            viewModel.empty.observe(viewLifecycleOwner) {
+                tasksLinearLayout.visibility = if (it) View.GONE else View.VISIBLE
+                noTasksLayout.visibility = if (it) View.VISIBLE else View.GONE
+            }
+
+            viewModel.currentFilteringLabel.observe(viewLifecycleOwner) {
+                filteringText.text = getText(it)
+            }
+
+            viewModel.noTaskIconRes.observe(viewLifecycleOwner) {
+                noTasksIcon.setImageResource(it)
+            }
+
+            viewModel.noTasksLabel.observe(viewLifecycleOwner) {
+                noTasksText.text = getText(it)
+            }
+
+            setupNavigation()
+            setupFab()
         }
-
-        viewModel.empty.observe(viewLifecycleOwner) {
-            viewDataBinding.tasksLinearLayout.visibility = if (it) View.GONE else View.VISIBLE
-            viewDataBinding.noTasksLayout.visibility = if (it) View.VISIBLE else View.GONE
-        }
-
-        viewModel.currentFilteringLabel.observe(viewLifecycleOwner) {
-            viewDataBinding.filteringText.text = getText(it)
-        }
-
-        viewModel.noTaskIconRes.observe(viewLifecycleOwner) {
-            viewDataBinding.noTasksIcon.setImageResource(it)
-        }
-
-
-        viewModel.noTasksLabel.observe(viewLifecycleOwner) {
-            viewDataBinding.noTasksText.text = getText(it)
-        }
-
-        setupNavigation()
-        setupFab()
     }
 
     private fun setupNavigation() {
