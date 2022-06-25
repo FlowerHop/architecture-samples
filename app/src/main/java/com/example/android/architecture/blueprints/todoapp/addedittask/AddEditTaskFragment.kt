@@ -16,6 +16,8 @@
 package com.example.android.architecture.blueprints.todoapp.addedittask
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -49,11 +51,29 @@ class AddEditTaskFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val root = inflater.inflate(R.layout.addtask_frag, container, false)
-        viewDataBinding = AddtaskFragBinding.bind(root).apply {
-            this.viewmodel = viewModel
-        }
+        viewDataBinding = AddtaskFragBinding.bind(root)
         // Set the lifecycle owner to the lifecycle of the view
         viewDataBinding.lifecycleOwner = this.viewLifecycleOwner
+
+        viewModel.dataLoading.observe(viewLifecycleOwner) {
+            viewDataBinding.refreshLayout.isEnabled = it
+            viewDataBinding.refreshLayout.isRefreshing = it
+            viewDataBinding.addTaskLayout.visibility = if (it) View.GONE else View.VISIBLE
+        }
+
+        viewModel.title.observe(viewLifecycleOwner) {
+            viewDataBinding.addTaskTitleEditText.setText(it)
+        }
+
+        viewModel.description.observe(viewLifecycleOwner) {
+            viewDataBinding.addTaskDescriptionEditText.setText(it)
+        }
+
+        viewDataBinding.saveTaskFab.setOnClickListener {
+            viewModel.title.value = viewDataBinding.addTaskTitleEditText.text.toString()
+            viewModel.description.value = viewDataBinding.addTaskDescriptionEditText.text.toString()
+            viewModel.saveTask() }
+
         return viewDataBinding.root
     }
 
